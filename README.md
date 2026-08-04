@@ -2,7 +2,7 @@
 
 ## Usage
 
-1. Copy the userparams file (`zfs-userparams.conf`) to a directory included in your Zabbix Agent configuration, such as `/etc/zabbix/zabbix_agentd.d/` or `/etc/zabbix/zabbix_agent2.d/`.
+1. Copy the userparams file (`zfs-userparams.conf`) to a directory included in your Zabbix Agent configuration, such as `/etc/zabbix/zabbix_agent2.d/`.
 
 2. Set the owner and group of the userparams file:
 
@@ -22,12 +22,6 @@
    sudo systemctl restart zabbix-agent2.service
    ```
 
-   Or:
-
-   ```shell
-   sudo systemctl restart zabbix-agent.service
-   ```
-
 5. Navigate to `Configuration → Templates → Import`, and upload the corresponding template file (`zfs-userparams-template.yaml`) to the Zabbix Server.
 
 6. Link the `Basic ZFS by Zabbix agent active` template to the desired hosts.
@@ -40,147 +34,129 @@
 
 ## Tested on
 
-- Zabbix Agent 2 running on Ubuntu 22.04 and 24.04
-- Zabbix Server 6.0 LTS
+- Active Zabbix Agent 2 on Ubuntu LTS
+- Zabbix Server 7.0 LTS
 
 ## Template items
 
-- `zfs-userparams.userparams-version`
+- `zfs-userparams.dataset.nokey`
 
-   Return the version number of this file. Reserved for future use and versioning within the template.
-
-- `zfs-userparams.pool.degraded`
-
-   Check for degraded pools.
-
-   Expected return value: an integer indicating the number of degraded pools.
-
-- `zfs-userparams.pool.faulted`
-
-   Check for faulted pools.
-
-   Expected return value: an integer indicating the number of faulted pools.
-
-- `zfs-userparams.pool.offline`
-
-   Check for offline pools.
-
-   Expected return value: an integer indicating the number of offline pools.
-
-- `zfs-userparams.pool.unavail`
-
-   Check for unavailable pools.
-
-   Expected return value: an integer indicating the number of unavailable pools.
-
-- `zfs-userparams.pool.removed`
-
-   Check for removed pools.
-
-   Expected return value: an integer indicating the number of removed pools.
+   Count of encrypted datasets with unavailable encryption keys. Datasets remain accessible for most operations but require key availability for full functionality.
 
 - `zfs-userparams.pool.capacity-80`
 
-   Check for pools with more than 80% disk space used.
-
-   Expected return value: an integer indicating the number of pools exceeding 80% usage.
+   Count of storage pools exceeding 80% capacity utilization. Pools approaching this threshold should be monitored for capacity planning.
 
 - `zfs-userparams.pool.capacity-90`
 
-   Check for pools with more than 90% disk space used.
+   Count of storage pools exceeding 90% capacity utilization. Immediate capacity action may be required.
 
-   Expected return value: an integer indicating the number of matching pools.
+- `zfs-userparams.pool.degraded`
 
-- `zfs-userparams.pool.fragmentation`
-
-   Check for pools with more than 70% free disk space fragmentation.
-
-   Expected return value: an integer indicating the number of pools with fragmentation above 70%.
-
-- `zfs-userparams.pool.scrubbing`
-
-   Check for pools currently undergoing a scrub operation.
-
-   Expected return value: an integer indicating the number of pools with a scrub in progress.
+   Count of storage pools in DEGRADED state. Indicates loss of redundancy that requires attention.
 
 - `zfs-userparams.pool.errors`
 
-   Check for pools reporting read, write, or checksum errors.
+   Count of storage pools reporting read, write, or checksum errors. Indicates potential hardware or data integrity issues.
 
-   Expected return value: an integer indicating the number of pools with read, write, or checksum errors.
+- `zfs-userparams.pool.faulted`
+
+   Count of storage pools in FAULTED state. Indicates pool is inaccessible and requires immediate intervention.
+
+- `zfs-userparams.pool.fragmentation`
+
+   Count of storage pools with free space fragmentation exceeding 70%. High fragmentation reduces performance.
 
 - `zfs-userparams.pool.number`
 
-   Check the total number of available ZFS storage pools.
+   Total count of available ZFS storage pools.
 
-   Expected return value: an integer indicating the total number of available pools.
+- `zfs-userparams.pool.offline`
 
-- `zfs-userparams.dataset.nokey`
+   Count of storage pools in OFFLINE state. Indicates administrator-initiated pool suspension.
 
-   Check for encrypted datasets with unavailable encryption keys.
+- `zfs-userparams.pool.removed`
 
-   Expected return value: an integer indicating the number of encrypted datasets with unavailable encryption keys.
+   Count of storage pools in REMOVED state. Indicates physical device removal while system was running.
+
+- `zfs-userparams.pool.scrubbing`
+
+   Count of storage pools actively undergoing scrub operations. Normal maintenance activity.
+
+- `zfs-userparams.pool.unavail`
+
+   Count of storage pools in UNAVAIL state. Indicates pool devices cannot be accessed.
+
+- `zfs-userparams.userparams-version`
+
+   Version number of this template file.
 
 ## Template triggers
 
 - **ZFS: Data errors**
 
-   Some pools are reporting errors.
+   One or more pools are reporting read, write, or checksum errors.
 
-   This indicates potential issues with ZFS pool's data or hardware. These errors may be related to read, write, or checksum mismatches, and it’s essential to address them promptly to ensure data integrity and prevent potential data loss.
+   These errors indicate potential data integrity issues or hardware problems. Review system logs, verify hardware health, and consider replacing suspect devices. Prompt investigation is essential to prevent data loss.
 
 - **ZFS: Degraded pool**
 
-   The virtual device has encountered a failure but remains operational.
+   One or more virtual devices have failed but the pool remains operational.
 
-   This situation most commonly occurs when a mirror or RAID-Z device has lost one or more constituent devices. The fault tolerance of the pool may be compromised, as a subsequent fault in another device could lead to irreparable damage.
+   This typically occurs when a mirror or RAID-Z device loses one or more constituent devices. Fault tolerance is compromised — a single additional device failure could cause irreparable data loss. Replace failed devices immediately.
 
 - **ZFS: Encryption key unavailable**
 
-   The encryption key for some datasets is not available.
+   One or more encrypted datasets cannot access their encryption keys.
 
-   You can still perform selected operations, such as scrubbing, dataset listing, snapshots, and replication.
+   Affected datasets can still perform scrubbing, listing, snapshots, and replication, but require the key for read/write operations.
 
 - **ZFS: Faulted pool**
 
-   The device or virtual device is completely inaccessible.
+   One or more pools are in FAULTED state and completely inaccessible.
 
-   This status typically indicates a complete failure of the device, rendering it incapable of sending or receiving data to/from ZFS. If a top-level virtual device is in this state, the entire pool becomes inaccessible.
+   This indicates complete device failure preventing data I/O. If a top-level virtual device is faulted, the entire pool is inaccessible. Diagnose hardware failures immediately and restore device functionality to bring the pool back online.
 
 - **ZFS: More than 70% free disk space fragmentation**
 
-   High fragmentation of free space can lead to significant performance degradation.
+   One or more pools have free space fragmentation exceeding 70%.
+
+   High fragmentation degrades performance and reduces the ability to allocate large contiguous blocks. Consider pool defragmentation through data reorganization or pool recreation to restore performance.
 
 - **ZFS: More than 80% disk space used**
 
-   Some ZFS pools are reporting more than 80% disk space usage.
+   One or more ZFS pools have exceeded 80% disk space capacity.
 
-   Pool performance tends to degrade significantly beyond this threshold.
+   Performance degradation typically occurs at this threshold. Review pool usage, consider data archival, or expand storage capacity to maintain optimal performance.
 
 - **ZFS: More than 90% disk space used**
 
-   Some ZFS pools are reporting more than 90% disk space usage.
+   One or more ZFS pools have exceeded 90% disk space capacity.
 
-   Pool performance will degrade significantly beyond this threshold.
+   Significant performance degradation is likely. Take immediate action to free space or expand storage to prevent potential write failures and system instability.
 
 - **ZFS: No data pools available**
 
 - **ZFS: Offline pool**
 
-   The device has been explicitly taken offline by the administrator.
+   One or more pools have been explicitly taken offline by an administrator.
+
+   Offline pools are intentionally suspended and require manual intervention to return to service. Verify this state is expected and planned.
 
 - **ZFS: Pool scrubbing**
 
-   Pool is currently undergoing a scrub operation.
+   One or more pools are currently undergoing a scrub operation.
+
+   Scrubbing is a normal maintenance activity that verifies data integrity and repairs correctable errors. This is expected behavior and requires no action.
 
 - **ZFS: Removed pool**
 
-   The device was physically removed while the system was running.
+   One or more devices were physically removed while the system was running.
 
-   Device removal detection depends on the hardware and may not be supported on all platforms.
+   Device removal detection depends on hardware support and may not be available on all platforms. Reinstall devices or replace them to restore pool health.
 
 - **ZFS: Unavailable pool**
 
-   The device or virtual device cannot be opened.
+   One or more pools have devices that cannot be opened or are inaccessible.
 
-   In some cases, pools with UNAVAIL devices may appear in DEGRADED mode. If a top-level virtual device is UNAVAIL, all data in the pool becomes inaccessible.
+   Pools may appear in DEGRADED mode while attempting recovery. If a top-level virtual device is UNAVAIL, all data in the pool becomes inaccessible. Verify device connectivity and repair or replace failed hardware immediately.

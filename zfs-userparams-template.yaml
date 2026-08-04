@@ -1,18 +1,16 @@
 zabbix_export:
-  version: '6.0'
-  date: '2025-01-10T16:40:07Z'
-  groups:
-    - uuid: 1f248a6e45934744a86f6abf1c8d44d4
+  version: '7.0'
+  template_groups:
+    - uuid: ae5dbb317f804797847a49bb5eb223de
       name: Templates/ZFS
   templates:
     - uuid: 889f3c8eaaf44e198255fd5dac497fe4
       template: 'Basic ZFS by Zabbix agent active'
       name: 'Basic ZFS by Zabbix agent active'
       description: |
-        Basic monitoring of ZFS storage pools.
+        Basic monitoring of ZFS storage pools with Zabbix Agent Active User Parameters.
         
-        The corresponding user parameters file and documentation can be found at:
-        https://github.com/bartmichu/zfs-zabbix-userparams
+        The corresponding User Parameters configuration file and installation instructions are available at: https://github.com/bartmichu/zfs-zabbix-userparams
       groups:
         - name: Templates/ZFS
       items:
@@ -22,16 +20,16 @@ zabbix_export:
           key: zfs-userparams.dataset.nokey
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of encrypted datasets with unavailable encryption keys.'
+          description: 'Count of encrypted datasets with unavailable encryption keys. Datasets remain accessible for most operations but require key availability for full functionality.'
           triggers:
             - uuid: 874189414bb44057a77f0a9da5ac3942
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.dataset.nokey)>0'
               name: 'ZFS: Encryption key unavailable'
               priority: WARNING
               description: |
-                The encryption key for some datasets is not available.
+                One or more encrypted datasets cannot access their encryption keys.
                 
-                You can still perform selected operations, such as scrubbing, dataset listing, snapshots, and replication.
+                Affected datasets can still perform scrubbing, listing, snapshots, and replication, but require the key for read/write operations.
               manual_close: 'YES'
         - uuid: b28d27c1ef464db0b45a20cffa683db8
           name: 'ZFS: Pool capacity - 80'
@@ -39,16 +37,16 @@ zabbix_export:
           key: zfs-userparams.pool.capacity-80
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of pools exceeding 80% usage.'
+          description: 'Count of storage pools exceeding 80% capacity utilization. Pools approaching this threshold should be monitored for capacity planning.'
           triggers:
             - uuid: 34fdbbf03edc43b7a51d5f4a02edd121
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.capacity-80)>0'
               name: 'ZFS: More than 80% disk space used'
               priority: WARNING
               description: |
-                Some ZFS pools are reporting more than 80% disk space usage.
+                One or more ZFS pools have exceeded 80% disk space capacity.
                 
-                Pool performance tends to degrade significantly beyond this threshold.
+                Performance degradation typically occurs at this threshold. Review pool usage, consider data archival, or expand storage capacity to maintain optimal performance.
               manual_close: 'YES'
         - uuid: 86103383d0e349e2bc0672a914f96b0a
           name: 'ZFS: Pool capacity - 90'
@@ -56,16 +54,16 @@ zabbix_export:
           key: zfs-userparams.pool.capacity-90
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of pools exceeding 90% usage.'
+          description: 'Count of storage pools exceeding 90% capacity utilization. Immediate capacity action may be required.'
           triggers:
             - uuid: 814b73076e3c45b08902c594acb0a8f6
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.capacity-90)>0'
               name: 'ZFS: More than 90% disk space used'
               priority: AVERAGE
               description: |
-                Some ZFS pools are reporting more than 90% disk space usage.
+                One or more ZFS pools have exceeded 90% disk space capacity.
                 
-                Pool performance will degrade significantly beyond this threshold.
+                Significant performance degradation is likely. Take immediate action to free space or expand storage to prevent potential write failures and system instability.
               manual_close: 'YES'
         - uuid: 893e96735f334d6682bd7240488e5c1e
           name: 'ZFS: Pool health - DEGRADED'
@@ -73,61 +71,64 @@ zabbix_export:
           key: zfs-userparams.pool.degraded
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of degraded pools.'
+          description: 'Count of storage pools in DEGRADED state. Indicates loss of redundancy that requires attention.'
           triggers:
             - uuid: 7ef591d20dd546cd969a679b320452b8
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.degraded)>0'
               name: 'ZFS: Degraded pool'
               priority: HIGH
               description: |
-                The virtual device has encountered a failure but remains operational.
+                One or more virtual devices have failed but the pool remains operational.
                 
-                This situation most commonly occurs when a mirror or RAID-Z device has lost one or more constituent devices. The fault tolerance of the pool may be compromised, as a subsequent fault in another device could lead to irreparable damage.
+                This typically occurs when a mirror or RAID-Z device loses one or more constituent devices. Fault tolerance is compromised — a single additional device failure could cause irreparable data loss. Replace failed devices immediately.
         - uuid: d6d4303e852c49d286971975de6e65df
           name: 'ZFS: Pool errors'
           type: ZABBIX_ACTIVE
           key: zfs-userparams.pool.errors
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of pools with read, write, or checksum errors.'
+          description: 'Count of storage pools reporting read, write, or checksum errors. Indicates potential hardware or data integrity issues.'
           triggers:
             - uuid: 25cecaece6c5456bb73cadd0990a9f5c
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.errors)>0'
               name: 'ZFS: Data errors'
               priority: HIGH
               description: |
-                Some pools are reporting errors.
+                One or more pools are reporting read, write, or checksum errors.
                 
-                This indicates potential issues with ZFS pool's data or hardware. These errors may be related to read, write, or checksum mismatches, and it’s essential to address them promptly to ensure data integrity and prevent potential data loss.
+                These errors indicate potential data integrity issues or hardware problems. Review system logs, verify hardware health, and consider replacing suspect devices. Prompt investigation is essential to prevent data loss.
         - uuid: d8dbc84fc26642e6a8f686cb99ab36b4
           name: 'ZFS: Pool health - FAULTED'
           type: ZABBIX_ACTIVE
           key: zfs-userparams.pool.faulted
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of faulted pools.'
+          description: 'Count of storage pools in FAULTED state. Indicates pool is inaccessible and requires immediate intervention.'
           triggers:
             - uuid: 56a68481e0ca4118bb6b85d1c0d19b65
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.faulted)>0'
               name: 'ZFS: Faulted pool'
               priority: DISASTER
               description: |
-                The device or virtual device is completely inaccessible.
+                One or more pools are in FAULTED state and completely inaccessible.
                 
-                This status typically indicates a complete failure of the device, rendering it incapable of sending or receiving data to/from ZFS. If a top-level virtual device is in this state, the entire pool becomes inaccessible.
+                This indicates complete device failure preventing data I/O. If a top-level virtual device is faulted, the entire pool is inaccessible. Diagnose hardware failures immediately and restore device functionality to bring the pool back online.
         - uuid: 7830643e1c3c434b906fe0c5ba70657b
           name: 'ZFS: Pool fragmentation'
           type: ZABBIX_ACTIVE
           key: zfs-userparams.pool.fragmentation
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of pools with fragmentation above 70%.'
+          description: 'Count of storage pools with free space fragmentation exceeding 70%. High fragmentation reduces performance.'
           triggers:
             - uuid: af1ec40dd0dc4de2820573e2dfd28242
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.fragmentation)>0'
               name: 'ZFS: More than 70% free disk space fragmentation'
               priority: INFO
-              description: 'High fragmentation of free space can lead to significant performance degradation.'
+              description: |
+                One or more pools have free space fragmentation exceeding 70%.
+                
+                High fragmentation degrades performance and reduces the ability to allocate large contiguous blocks. Consider pool defragmentation through data reorganization or pool recreation to restore performance.
               manual_close: 'YES'
         - uuid: 5ca64844f5d944cfb9d76a86f58fe749
           name: 'ZFS: Pools number'
@@ -135,7 +136,7 @@ zabbix_export:
           key: zfs-userparams.pool.number
           history: 14d
           trends: 30d
-          description: 'An integer indicating the total number of available pools.'
+          description: 'Total count of available ZFS storage pools.'
           triggers:
             - uuid: c0cd5bf824d8407e826a7a08fed029f9
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.number)=0'
@@ -148,13 +149,16 @@ zabbix_export:
           key: zfs-userparams.pool.offline
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of offline pools.'
+          description: 'Count of storage pools in OFFLINE state. Indicates administrator-initiated pool suspension.'
           triggers:
             - uuid: f61a6734596146fcb1f12697124ef40e
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.offline)>0'
               name: 'ZFS: Offline pool'
               priority: INFO
-              description: 'The device has been explicitly taken offline by the administrator.'
+              description: |
+                One or more pools have been explicitly taken offline by an administrator.
+                
+                Offline pools are intentionally suspended and require manual intervention to return to service. Verify this state is expected and planned.
               manual_close: 'YES'
         - uuid: d8f9f5299d1c4bb7a244c972b86762e5
           name: 'ZFS: Pool health - REMOVED'
@@ -162,29 +166,32 @@ zabbix_export:
           key: zfs-userparams.pool.removed
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of removed pools.'
+          description: 'Count of storage pools in REMOVED state. Indicates physical device removal while system was running.'
           triggers:
             - uuid: f28db51d033a4ad2962a52ba66b8c5f7
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.removed)>0'
               name: 'ZFS: Removed pool'
               priority: AVERAGE
               description: |
-                The device was physically removed while the system was running.
+                One or more devices were physically removed while the system was running.
                 
-                Device removal detection depends on the hardware and may not be supported on all platforms.
+                Device removal detection depends on hardware support and may not be available on all platforms. Reinstall devices or replace them to restore pool health.
         - uuid: 293688f25cbb4bb3a6a4040760feb3b8
           name: 'ZFS: Pool scrubbing'
           type: ZABBIX_ACTIVE
           key: zfs-userparams.pool.scrubbing
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of pools with a scrub in progress.'
+          description: 'Count of storage pools actively undergoing scrub operations. Normal maintenance activity.'
           triggers:
             - uuid: 560f0d15bc9e4fd19915c3aa042ab827
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.scrubbing)>0'
               name: 'ZFS: Pool scrubbing'
               priority: INFO
-              description: 'Pool is currently undergoing a scrub operation.'
+              description: |
+                One or more pools are currently undergoing a scrub operation.
+                
+                Scrubbing is a normal maintenance activity that verifies data integrity and repairs correctable errors. This is expected behavior and requires no action.
               manual_close: 'YES'
         - uuid: 73874453178c427294097feaebffa8f1
           name: 'ZFS: Pool health - UNAVAIL'
@@ -192,16 +199,16 @@ zabbix_export:
           key: zfs-userparams.pool.unavail
           history: 14d
           trends: 30d
-          description: 'An integer indicating the number of unavailable pools.'
+          description: 'Count of storage pools in UNAVAIL state. Indicates pool devices cannot be accessed.'
           triggers:
             - uuid: 49ad9aa2fbd14a77b5e6cac88abf0638
               expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.pool.unavail)>0'
               name: 'ZFS: Unavailable pool'
               priority: HIGH
               description: |
-                The device or virtual device cannot be opened.
+                One or more pools have devices that cannot be opened or are inaccessible.
                 
-                In some cases, pools with UNAVAIL devices may appear in DEGRADED mode. If a top-level virtual device is UNAVAIL, all data in the pool becomes inaccessible.
+                Pools may appear in DEGRADED mode while attempting recovery. If a top-level virtual device is UNAVAIL, all data in the pool becomes inaccessible. Verify device connectivity and repair or replace failed hardware immediately.
               manual_close: 'YES'
         - uuid: 1148b70193634c04a4d606fdeb92ca18
           name: 'ZFS Template - userparams file version'
@@ -210,3 +217,4 @@ zabbix_export:
           delay: 30m
           history: 14d
           trends: 30d
+          description: 'Version number of this template file.'
