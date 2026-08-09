@@ -412,3 +412,16 @@ zabbix_export:
           history: 14d
           trends: 30d
           description: 'Version number of this template file.'
+          triggers:
+            - uuid: 990b4bcd098042c1a65b811456073bcf
+              expression: 'last(/Basic ZFS by Zabbix agent active/zfs-userparams.userparams-version)<>4'
+              tags:
+                - tag: component
+                  value: zfs
+              name: 'ZFS: User Parameters version mismatch'
+              priority: INFO
+              description: |
+                The deployed zfs-userparams.conf file is not at the expected version (4).
+
+                The template and the agent User Parameters file are out of sync. Update zfs-userparams.conf on the host (and/or re-import the template) so both are at the same version.
+              manual_close: 'YES'

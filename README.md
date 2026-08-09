@@ -141,6 +141,10 @@ The `zfs-userparams.arc.*` items expose the ARC size and an ARC-aware memory cal
 
    The ARC hit ratio has stayed below 50% for the last 30 minutes. Suggests the ARC is undersized for the current working set, increasing read latency and back-end disk I/O.
 
+- **ZFS: User Parameters version mismatch**
+
+   The deployed `zfs-userparams.conf` file is not at the expected version (4). Update the User Parameters file on the host and/or re-import the template so both are in sync.
+
 - **ZFS: Data errors**
 
    One or more pools are reporting read, write, or checksum errors.
