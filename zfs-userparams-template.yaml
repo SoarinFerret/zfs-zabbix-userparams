@@ -31,6 +31,95 @@ zabbix_export:
                 
                 Affected datasets can still perform scrubbing, listing, snapshots, and replication, but require the key for read/write operations.
               manual_close: 'YES'
+        - uuid: 766bf9d17ed240efbe64fcbff11d5a7c
+          name: 'ZFS: ARC size'
+          type: ZABBIX_ACTIVE
+          key: zfs-userparams.arc.size
+          history: 14d
+          trends: 90d
+          units: B
+          description: 'Current size of the ZFS ARC in bytes. The ARC is allocated outside the Linux page cache, so the kernel reports it as used memory rather than buff/cache.'
+        - uuid: 6d440d86d53840a6b79d09cd9ae4d34a
+          name: 'ZFS: ARC minimum size'
+          type: ZABBIX_ACTIVE
+          key: zfs-userparams.arc.cmin
+          history: 14d
+          trends: 90d
+          units: B
+          description: 'Minimum size the ARC can be reclaimed down to under memory pressure (c_min), in bytes.'
+        - uuid: dcec1f6fc86046509d44bb397245d26d
+          name: 'ZFS: ARC maximum size'
+          type: ZABBIX_ACTIVE
+          key: zfs-userparams.arc.cmax
+          history: 14d
+          trends: 90d
+          units: B
+          description: 'Maximum size the ARC is allowed to grow to (c_max), in bytes.'
+        - uuid: 01b4a3f0831b43fe94fdcc21ac1ba091
+          name: 'ZFS: ARC reclaimable memory'
+          type: ZABBIX_ACTIVE
+          key: zfs-userparams.arc.reclaimable
+          history: 14d
+          trends: 90d
+          units: B
+          description: 'Reclaimable portion of the ARC (size - c_min, floored at 0), in bytes. This is the memory the kernel can hand back to applications on demand.'
+        - uuid: 18ce0b6b4f634cc0aa4c1f8802fc25d8
+          name: 'ZFS: ARC hit ratio'
+          type: ZABBIX_ACTIVE
+          key: zfs-userparams.arc.hit-ratio
+          value_type: FLOAT
+          history: 14d
+          trends: 90d
+          units: '%'
+          description: 'ARC hit ratio as a percentage since boot. A low hit ratio may indicate the ARC is too small for the working set.'
+          triggers:
+            - uuid: 770fd948aaeb4a0780e975a3884bb9ba
+              expression: 'max(/Basic ZFS by Zabbix agent active/zfs-userparams.arc.hit-ratio,30m)<50'
+              name: 'ZFS: Low ARC hit ratio'
+              priority: INFO
+              description: |
+                The ARC hit ratio has stayed below 50% for the last 30 minutes.
+
+                A persistently low hit ratio suggests the ARC is undersized for the current working set, which increases read latency and back-end disk I/O. Consider increasing zfs_arc_max if free memory allows.
+              manual_close: 'YES'
+        - uuid: c85f23da60cc484f93c1589df9a0e90e
+          name: 'ZFS: Memory available (ARC-aware)'
+          type: ZABBIX_ACTIVE
+          key: zfs-userparams.arc.mem-available
+          history: 14d
+          trends: 90d
+          units: B
+          description: 'Available memory in bytes accounting for reclaimable ARC: MemAvailable + (ARC size - c_min). Use this instead of vm.memory.size[available] on ZFS hosts.'
+        - uuid: b2dc1f23bced470ca58cc38ef97eca19
+          name: 'ZFS: Memory used (ARC-aware)'
+          type: ZABBIX_ACTIVE
+          key: zfs-userparams.arc.mem-pused
+          value_type: FLOAT
+          history: 14d
+          trends: 90d
+          units: '%'
+          description: 'Used memory as a percentage, crediting reclaimable ARC as available: 100 * (1 - (MemAvailable + ARC size - c_min) / MemTotal). Use this instead of vm.memory.size[pused] for memory alerting on ZFS hosts.'
+          triggers:
+            - uuid: 12ba78ad576947bcb14995fba30cece3
+              expression: 'min(/Basic ZFS by Zabbix agent active/zfs-userparams.arc.mem-pused,5m)>90'
+              name: 'ZFS: High memory utilization (ARC-aware) - 90%'
+              priority: HIGH
+              description: |
+                ARC-aware memory utilization has exceeded 90% for the last 5 minutes.
+
+                Unlike the stock memory items, this metric already discounts reclaimable ARC, so a sustained high value reflects genuine memory pressure rather than ZFS caching. Investigate application memory usage and consider capping zfs_arc_max or adding memory.
+            - uuid: dfb2faa38fd8472598b7419ed245fb5e
+              expression: 'min(/Basic ZFS by Zabbix agent active/zfs-userparams.arc.mem-pused,5m)>80'
+              name: 'ZFS: High memory utilization (ARC-aware) - 80%'
+              priority: WARNING
+              description: |
+                ARC-aware memory utilization has exceeded 80% for the last 5 minutes.
+
+                This metric already discounts reclaimable ARC, so it reflects real memory pressure. Monitor the trend and review application memory usage.
+              dependencies:
+                - name: 'ZFS: High memory utilization (ARC-aware) - 90%'
+                  expression: 'min(/Basic ZFS by Zabbix agent active/zfs-userparams.arc.mem-pused,5m)>90'
+              manual_close: 'YES'
         - uuid: b28d27c1ef464db0b45a20cffa683db8
           name: 'ZFS: Pool capacity - 80'
           type: ZABBIX_ACTIVE
